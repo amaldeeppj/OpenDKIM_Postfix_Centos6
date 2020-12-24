@@ -1,0 +1,28 @@
+#!/bin/bash
+
+#Script by Amaldeep <amaldeeppjcoc1@gmail.com>
+
+DOMAINS=file_path_to_list_of_domains
+DKIM_KEY=/etc/opendkim/keys
+
+for i in `cat $DOMAINS`
+do
+        echo "=================================="
+        echo $i
+        echo $DKIM_KEY/$i
+        if ! [ -d $DKIM_KEY/$i ]
+        then
+                echo directory $DKIM_KEY/$i does not exist,  generating DKIM for $i
+                mkdir $DKIM_KEY/$i
+                opendkim-genkey -D $DKIM_KEY/$i/ -d $i -s default
+                chown -R opendkim: $DKIM_KEY/$i
+                mv $DKIM_KEY/$i/default.private $DKIM_KEY/$i/default
+
+                echo default._domainkey.$i $i:default:$DKIM_KEY/$i/default >> /etc/opendkim/KeyTable
+                echo *@$i default._domainkey.$i >> /etc/opendkim/SigningTable
+                echo $i >> /etc/opendkim/TrustedHosts
+        else
+                echo directory $DKIM_KEY/$i exist, skipping the domain $i
+        fi
+        echo "=================================="
+done
